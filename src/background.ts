@@ -1,52 +1,29 @@
 "use strict";
 
 import { app, protocol, BrowserWindow } from "electron";
-import * as path from "path";
-import { format as formatUrl } from "url";
 import {
   createProtocol,
   installVueDevtools
 } from "vue-cli-plugin-electron-builder/lib";
 const isDevelopment = process.env.NODE_ENV !== "production";
-if (isDevelopment) {
-  require("module").globalPaths.push(process.env.NODE_MODULES_PATH);
-}
 
-let mainWindow: any;
+let win: any;
 
 protocol.registerStandardSchemes(["app"], { secure: true });
-function createMainWindow() {
-  const window = new BrowserWindow({
-    width:800,
-    height:600
-  });
+function createWindow() {
+  win = new BrowserWindow({ width: 800, height: 550, frame: false });
 
-  if (isDevelopment) {
-    window.loadURL(process.env.WEBPACK_DEV_SERVER_URL as string);
-    if (!process.env.IS_TEST) window.webContents.openDevTools();
+  if (isDevelopment || process.env.IS_TEST) {
+    win.loadURL(process.env.WEBPACK_DEV_SERVER_URL);
+    if (!process.env.IS_TEST) win.webContents.openDevTools();
   } else {
     createProtocol("app");
-    window.loadURL(
-      formatUrl({
-        pathname: path.join(__dirname, "index.html"),
-        protocol: "file",
-        slashes: true
-      })
-    );
+    win.loadURL("app://./index.html");
   }
 
-  window.on("closed", () => {
-    mainWindow = null;
+  win.on("closed", () => {
+    win = null;
   });
-
-  window.webContents.on("devtools-opened", () => {
-    window.focus();
-    setImmediate(() => {
-      window.focus();
-    });
-  });
-
-  return window;
 }
 
 app.on("window-all-closed", () => {
@@ -56,8 +33,8 @@ app.on("window-all-closed", () => {
 });
 
 app.on("activate", () => {
-  if (mainWindow === null) {
-    mainWindow = createMainWindow();
+  if (win === null) {
+    createWindow();
   }
 });
 
@@ -65,5 +42,19 @@ app.on("ready", async () => {
   if (isDevelopment && !process.env.IS_TEST) {
     await installVueDevtools();
   }
-  mainWindow = createMainWindow();
+  createWindow();
 });
+
+if (isDevelopment) {
+  if (process.platform === "win32") {
+    process.on("message", data => {
+      if (data === "graceful-exit") {
+        app.quit();
+      }
+    });
+  } else {
+    process.on("SIGTERM", () => {
+      app.quit();
+    });
+  }
+}

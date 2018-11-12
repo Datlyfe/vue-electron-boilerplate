@@ -1,5 +1,6 @@
 <template>
   <div class="home">
+    <h1>Electron Vue</h1>
   </div>
 </template>
 

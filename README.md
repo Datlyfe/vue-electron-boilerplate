@@ -1,3 +1,3 @@
-#Electron 2.0.9
+#Electron 3.0.0
 
 #Vue 2.5.17
